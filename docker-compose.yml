@@ -17,7 +17,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
   minio:
     image: minio/minio
@@ -30,7 +30,7 @@ services:
     healthcheck:
       test: mc ready local
     volumes:
-      - ./minio_data:/data
+      - minio_data:/data
 
   minio-setup:
     image: minio/minio
@@ -56,18 +56,10 @@ services:
         condition: service_healthy
     environment:
       <<: *envars
-      # POSTGRES_PORT: 5432
-      # MINIO_ENDPOINT: http://minio:9000
-      # MINIO_BUCKET: backups
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: postgres
+      MINIO_SECRET_KEY: postgres
       MINIO_BUCKET: backups
-      PGHOST: postgres
-      PGPORT: 5432
-      PGDATABASE: postgres
-      PGUSER: postgres
-      PGPASSWORD: postgres
 
 volumes:
   postgres_data:
