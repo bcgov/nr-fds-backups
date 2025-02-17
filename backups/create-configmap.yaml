@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-source
+data:
+  "package.json": |
+    {
+      "name": "node-starter",
+      "private": true,
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "backup": "node backup.js"
+      },
+      "dependencies": {
+        "@aws-sdk/client-s3": "^3.511.0",
+        "@aws-sdk/lib-storage": "^3.511.0",
+        "dotenv": "^16.4.1",
+        "pg": "^8.11.3"
+      }
+    }
+  "backup.js": |
+    require('dotenv').config();
+    const { Upload } = require('@aws-sdk/lib-storage');
+    const { S3Client } = require('@aws-sdk/client-s3');
+    const { spawn } = require('child_process');
+
+    async function backupDatabase() {
+      try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `backup-${timestamp}.sql`;
+        
+        const s3Client = new S3Client({
+          region: process.env.AWS_REGION,
+          credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+          }
+        });
+
+        console.log('Starting database backup...');
+        
+        const dumpProcess = spawn('pg_dump', [], {
+          env: {
+            PGHOST: process.env.PGHOST,
+            PGPORT: process.env.PGPORT,
+            PGDATABASE: process.env.PGDATABASE,
+            PGUSER: process.env.PGUSER,
+            PGPASSWORD: process.env.PGPASSWORD
+          }
+        });
+
+        dumpProcess.stderr.on('data', (data) => {
+          console.error(`pg_dump stderr: ${data}`);
+        });
+
+        const upload = new Upload({
+          client: s3Client,
+          params: {
+            Bucket: process.env.S3_BUCKET,
+            Key: filename,
+            Body: dumpProcess.stdout
+          }
+        });
+
+        upload.on('httpUploadProgress', (progress) => {
+          console.log(`Upload progress: ${progress.loaded} bytes`);
+        });
+
+        await upload.done();
+        console.log(`Backup completed successfully: ${filename}`);
+
+      } catch (error) {
+        console.error('Backup failed:', error);
+        process.exit(1);
+      }
+    }
+
+    backupDatabase();
