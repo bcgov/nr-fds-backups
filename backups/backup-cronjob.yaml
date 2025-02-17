@@ -22,31 +22,31 @@ spec:
               npm install && \
               npm run backup
             env:
-            - name: PGHOST
+            - name: POSTGRES_HOST
               valueFrom:
                 secretKeyRef:
                   name: postgres-backup-secrets
-                  key: PGHOST
-            - name: PGPORT
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PORT
               valueFrom:
                 secretKeyRef:
                   name: postgres-backup-secrets
-                  key: PGPORT
-            - name: PGDATABASE
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
                   name: postgres-backup-secrets
-                  key: PGDATABASE
-            - name: PGUSER
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: postgres-backup-secrets
-                  key: PGUSER
-            - name: PGPASSWORD
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: postgres-backup-secrets
-                  key: PGPASSWORD
+                  key: POSTGRES_PASSWORD
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:

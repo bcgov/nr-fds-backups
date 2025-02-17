@@ -364,4 +364,8 @@ pyrightconfig.json
 .idea
 *.key
 *.pem
-*.pub
+*.pub      /usr/bin/mc alias set backups http://minio:900 minioadmin minioadmin;
+
+# Volume mounts
+**/minio_data/*
+**/postgres_data/*

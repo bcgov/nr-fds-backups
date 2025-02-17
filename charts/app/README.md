@@ -267,7 +267,7 @@ true
 			<td>backend.containers[0].env.fromGlobalSecret[2].name</td>
 			<td>string</td>
 			<td><pre lang="json">
-"POSTGRES_DATABASE"
+"POSTGRES_DB"
 </pre>
 </td>
 			<td></td>
@@ -1500,7 +1500,7 @@ false
 			<td>bitnami-pg.primary.initdb.scripts."postgis.sh"</td>
 			<td>string</td>
 			<td><pre lang="json">
-"#!/bin/sh\nPGPASSWORD=$POSTGRES_PASSWORD psql -U postgres -d postgres -c \"CREATE EXTENSION postgis;\"\n"
+"#!/bin/sh\nPOSTGRES_PASSWORD=$POSTGRES_PASSWORD psql -U postgres -d postgres -c \"CREATE EXTENSION postgis;\"\n"
 </pre>
 </td>
 			<td></td>
@@ -2870,7 +2870,7 @@ true
 			<td>backend.containers[0].env.fromGlobalSecret[2].name</td>
 			<td>string</td>
 			<td><pre lang="json">
-"POSTGRES_DATABASE"
+"POSTGRES_DB"
 </pre>
 </td>
 			<td></td>
@@ -4103,7 +4103,7 @@ false
 			<td>bitnami-pg.primary.initdb.scripts."postgis.sh"</td>
 			<td>string</td>
 			<td><pre lang="json">
-"#!/bin/sh\nPGPASSWORD=$POSTGRES_PASSWORD psql -U postgres -d postgres -c \"CREATE EXTENSION postgis;\"\n"
+"#!/bin/sh\nPOSTGRES_PASSWORD=$POSTGRES_PASSWORD psql -U postgres -d postgres -c \"CREATE EXTENSION postgis;\"\n"
 </pre>
 </td>
 			<td></td>

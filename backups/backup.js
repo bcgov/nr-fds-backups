@@ -1,18 +1,44 @@
 require('dotenv').config();
 const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
+const { Upload } = require('@aws-sdk/lib-storage');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { PassThrough } = require('stream');
 
 async function backupDatabase() {
-  // Connection configuration for local Docker container
+  // Connection configuration from environment variables
   const client = new Client({
-    host: 'localhost',
-    port: 5432,
-    database: 'postgres',
-    user: 'postgres',
-    password: 'default'
+    user: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASSWORD,
+    host: process.env.POSTGRES_HOST,
+    port: process.env.POSTGRES_PORT || '5432',
+    database: process.env.POSTGRES_DB,
+  });
+
+  // Initialize S3 client for MinIO
+  const s3Client = new S3Client({
+    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
+    region: 'us-east-1', // MinIO requires a region but it can be any value
+    credentials: {
+      accessKeyId: process.env.MINIO_ACCESS_KEY,
+      secretAccessKey: process.env.MINIO_SECRET_KEY
+    },
+    forcePathStyle: true // Required for MinIO
   });
   
+  const passThrough = new PassThrough();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `backup-${timestamp}.sql`;
+
+  // Start the MinIO upload
+  const upload = new Upload({
+    client: s3Client,
+    params: {
+      Bucket: process.env.MINIO_BUCKET,
+      Key: filename,
+      Body: passThrough
+    }
+  });
+
   try {
     console.log('Starting database backup...');
     await client.connect();
@@ -26,12 +52,7 @@ async function backupDatabase() {
     `;
     const { rows: tables } = await client.query(tableQuery);
     
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `backup-${timestamp}.sql`;
-    const backupPath = path.join(__dirname, filename);
-    const writeStream = fs.createWriteStream(backupPath);
-    
-    // For each table, dump schema and data
+    // For each table, stream schema and data
     for (const { table_name } of tables) {
       console.log(`Processing table: ${table_name}`);
       
@@ -55,7 +76,7 @@ async function backupDatabase() {
         GROUP BY table_name;
       `;
       const { rows: [schema] } = await client.query(schemaQuery, [table_name]);
-      writeStream.write(schema[Object.keys(schema)[0]] + '\n\n');
+      passThrough.write(schema[Object.keys(schema)[0]] + '\n\n');
       
       // Get table data
       const dataQuery = `SELECT * FROM "${table_name}"`;
@@ -69,17 +90,20 @@ async function backupDatabase() {
             value instanceof Date ? `'${value.toISOString()}'` :
             value
           );
-          writeStream.write(
+          passThrough.write(
             `INSERT INTO "${table_name}" (${Object.keys(row).map(k => `"${k}"`).join(', ')}) ` +
             `VALUES (${values.join(', ')});\n`
           );
         }
-        writeStream.write('\n');
+        passThrough.write('\n');
       }
     }
     
-    writeStream.end();
-    console.log(`Backup completed successfully: ${filename}`);
+    // End the stream and wait for upload to complete
+    passThrough.end();
+    await upload.done();
+    
+    console.log(`Backup completed successfully and uploaded to MinIO: ${filename}`);
     
   } catch (error) {
     console.error('Backup failed:', error);
@@ -89,4 +113,7 @@ async function backupDatabase() {
   }
 }
 
-backupDatabase();
+// Add delay to ensure MinIO and Postgres are ready
+setTimeout(() => {
+  backupDatabase();
+}, 5000);
