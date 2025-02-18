@@ -17,7 +17,7 @@ async function backupDatabase() {
   // Initialize S3 client for MinIO
   const s3Client = new S3Client({
     endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
-    region: 'us-east-1', // MinIO requires a region but it can be any value
+    region: 'ca-west-1', // MinIO requires a region but it can be any value
     credentials: {
       accessKeyId: process.env.MINIO_ACCESS_KEY,
       secretAccessKey: process.env.MINIO_SECRET_KEY
