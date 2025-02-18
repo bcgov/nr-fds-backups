@@ -1,11 +1,9 @@
 FROM node:22-slim
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
 WORKDIR /app
-
-COPY package*.json ./
+COPY package*.json backup.js ./
 RUN npm ci
 
-COPY . .
-
-USER 1001
+USER node
 CMD ["npm", "run", "backup"]
