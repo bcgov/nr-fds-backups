@@ -7,4 +7,5 @@ RUN npm ci
 
 COPY . .
 
+USER 1001
 CMD ["npm", "run", "backup"]
