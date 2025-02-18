@@ -1,4 +1,3 @@
-require('dotenv').config();
 const { Client } = require('pg');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { S3Client } = require('@aws-sdk/client-s3');
