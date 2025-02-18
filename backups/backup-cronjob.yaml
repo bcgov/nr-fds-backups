@@ -67,6 +67,8 @@ spec:
                 secretKeyRef:
                   name: aws-backup-secrets
                   key: S3_BUCKET
+            securityContext:
+              allowPrivilegeEscalation: false
             volumeMounts:
             - name: backup-source
               mountPath: /app

@@ -1,11 +1,12 @@
 # Reusable envars
 x-envars: &envars
-  MINIO_ROOT_PASSWORD: postgres
-  MINIO_ROOT_USER: postgres
-  POSTGRES_HOST: postgres
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: postgres
+  environment:
+    MINIO_ROOT_PASSWORD: postgres
+    MINIO_ROOT_USER: postgres
+    POSTGRES_HOST: postgres
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_DB: postgres
 
 services:
   postgres:
