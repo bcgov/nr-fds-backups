@@ -1,100 +1,50 @@
-# Reusable vars
-x-var:
-  - &POSTGRES_USER
-    postgres
-  - &POSTGRES_PASSWORD
-    default
-  - &POSTGRES_DATABASE
-    postgres
-
-# Reusable envars for postgres
-x-postgres-vars: &postgres-vars
-  POSTGRES_HOST: database
-  POSTGRES_USER: *POSTGRES_USER
-  POSTGRES_PASSWORD: *POSTGRES_PASSWORD
-  POSTGRES_DATABASE: *POSTGRES_DATABASE
+# Reusable envars
+x-envars: &envars
+  MINIO_ROOT_PASSWORD: postgres
+  MINIO_ROOT_USER: postgres
+  POSTGRES_HOST: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: postgres
 
 services:
-  database:
-    image: postgis/postgis:16-3.4 # if using crunchy , make sure to align with crunchy version, currently it is at 16 and postgis 3.3
-    container_name: database
+  postgres:
+    image: postgres:15
     environment:
-      <<: *postgres-vars
+      <<: *envars
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", *POSTGRES_USER]
+      test: ["CMD", "pg_isready", "-U", "postgres"]
     ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
 
-  migrations:
-    image: flyway/flyway:10-alpine
-    container_name: migrations
-    command: info migrate info
-    volumes: ["./migrations/sql:/flyway/sql:ro"]
+  minio:
+    image: minio/minio
+    ports: ["9000:9000", "9001:9001"]
     environment:
-      FLYWAY_URL: jdbc:postgresql://database:5432/postgres
-      FLYWAY_USER: *POSTGRES_USER
-      FLYWAY_PASSWORD: *POSTGRES_PASSWORD
-      FLYWAY_BASELINE_ON_MIGRATE: true
-      FLYWAY_DEFAULT_SCHEMA: users
-    depends_on:
-      database:
-        condition: service_healthy
-
-  schemaspy:
-    image: schemaspy/schemaspy:6.2.4
-    profiles: ["schemaspy"]
-    container_name: schemaspy
-    command: -t pgsql11 -db postgres -host database -port 5432 -u postgres -p default -schemas users
-    depends_on:
-      migrations:
-        condition: service_completed_successfully
-    volumes: ["./output:/output"]
-
-  backend:
-    container_name: backend
-    depends_on:
-      migrations:
-        condition: service_started
-    entrypoint: sh -c "npm i && npm run start:dev"
-    environment:
-      <<: *postgres-vars
-      NODE_ENV: development
-    image: node:22
-    ports: ["3001:3000"]
+      <<: *envars
+    entrypoint: >
+      /bin/sh -c "
+        mkdir -p /data/backups;
+        minio server --console-address ":9001" /data
+      "
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api"]
-    working_dir: "/app"
-    volumes: ["./backend:/app", "/app/node_modules"]
+      test: ["CMD", "mc", "ready", "local"]
+    volumes: [minio_data:/data]
 
-  frontend:
-    container_name: frontend
-    entrypoint: sh -c "npm ci && npm run dev"
-    environment:
-      BACKEND_URL: http://backend:3000
-      PORT: 3000
-      NODE_ENV: development
-    image: node:22
-    ports: ["3000:3000"]
-    volumes: ["./frontend:/app", "/app/node_modules"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-    working_dir: "/app"
+  backup:
+    build: ./backups
     depends_on:
-      backend:
+      minio:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *envars
+      MINIO_ACCESS_KEY: postgres
+      MINIO_BUCKET: backups
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_SECRET_KEY: postgres
 
-  caddy:
-    container_name: caddy
-    profiles: ["caddy"]
-    build: ./frontend
-    environment:
-      NODE_ENV: development
-      PORT: 3000
-      BACKEND_URL: http://backend:3000
-      LOG_LEVEL: info
-    ports: ["3005:3000"]
-    volumes: ["./frontend/Caddyfile:/etc/caddy/Caddyfile"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-    depends_on:
-      backend:
-        condition: service_healthy
+volumes:
+  postgres_data:
+  minio_data:
