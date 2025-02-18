@@ -1,12 +1,11 @@
 # Reusable envars
 x-envars: &envars
-  environment:
-    MINIO_ROOT_PASSWORD: postgres
-    MINIO_ROOT_USER: postgres
-    POSTGRES_HOST: postgres
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
-    POSTGRES_DB: postgres
+  MINIO_ROOT_PASSWORD: postgres
+  MINIO_ROOT_USER: postgres
+  POSTGRES_HOST: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: postgres
 
 services:
   postgres:
@@ -29,7 +28,7 @@ services:
         minio server --console-address ":9001" /data
       "
     healthcheck:
-      test: mc ready local
+      test: ["CMD", "mc", "ready", "local"]
     volumes: [minio_data:/data]
 
   backup:
