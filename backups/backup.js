@@ -113,7 +113,4 @@ async function backupDatabase() {
   }
 }
 
-// Add delay to ensure MinIO and Postgres are ready
-setTimeout(() => {
-  backupDatabase();
-}, 5000);
+backupDatabase();
