@@ -68,6 +68,8 @@ spec:
                   name: aws-backup-secrets
                   key: S3_BUCKET
             securityContext:
+              capabilities:
+                add: ["NET_BIND_SERVICE"]
               allowPrivilegeEscalation: false
             volumeMounts:
             - name: backup-source
